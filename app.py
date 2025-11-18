@@ -15,7 +15,7 @@ load_dotenv()
 # -------------------------
 # Configuration
 # -------------------------
-st.set_page_config(page_title="Nebula DataSense", layout="wide")
+st.set_page_config(page_title="DataSense", layout="wide")
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 MODEL_PRIORITY = [
@@ -30,16 +30,16 @@ MODEL_PRIORITY = [
 st.markdown("""
     <style>
     :root {
-        --bg: #0b1020;
-        --card: #0f1724;
-        --muted: #94a3b8;
-        --accent: #6ee7b7;
-        --border: rgba(255,255,255,0.06);
+        --bg: #1a1a1a;
+        --card: #2d2d2d;
+        --muted: #a0a0a0;
+        --accent: #ff6b35;
+        --border: rgba(255,255,255,0.1);
     }
     
     html, body, [data-testid="stAppViewContainer"] {
         background: var(--bg);
-        color: #e6eef8;
+        color: #e0e0e0;
     }
     
     .stApp {
@@ -47,61 +47,67 @@ st.markdown("""
     }
     
     .main-title {
-        font-size: 32px;
-        font-weight: 700;
-        color: var(--accent);
-        margin-bottom: 8px;
+        font-size: 64px;
+        font-weight: 600;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #ffffff;
+        margin-bottom: 4px;
+        text-align: center;
+        letter-spacing: 0.5px;
     }
     
     .subtitle {
         color: var(--muted);
-        font-size: 14px;
-        margin-bottom: 24px;
+        font-size: 20px;
+        margin-bottom: 32px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        text-align: center;
     }
     
     .user-message {
-        background: linear-gradient(90deg, #0ea5a4, #34d399);
-        color: #011;
-        padding: 12px 16px;
-        border-radius: 12px;
-        margin: 8px 0;
+        background: var(--card);
+        color: #ffffff;
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin: 6px 0;
         text-align: right;
-        font-weight: 500;
+        border-left: 3px solid var(--accent);
     }
     
     .bot-message {
         background: var(--card);
-        color: #e6eef8;
-        padding: 12px 16px;
-        border-radius: 12px;
-        margin: 8px 0;
+        color: #e0e0e0;
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin: 6px 0;
         border: 1px solid var(--border);
     }
     
     .stButton>button {
-        background: transparent;
-        border: 1px solid var(--border);
-        color: var(--accent);
-        padding: 8px 16px;
-        border-radius: 8px;
+        background: var(--accent);
+        border: none;
+        color: #ffffff;
+        padding: 6px 14px;
+        border-radius: 4px;
         transition: all 0.2s;
+        font-weight: 500;
     }
     
     .stButton>button:hover {
-        border-color: var(--accent);
-        background: rgba(110, 231, 183, 0.1);
+        background: #ff8555;
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
     }
     
     .stTextInput>div>div>input {
         background: var(--card);
         border: 1px solid var(--border);
-        color: #e6eef8;
-        border-radius: 8px;
+        color: #e0e0e0;
+        border-radius: 4px;
     }
     
     .stDataFrame {
         background: var(--card);
-        border-radius: 8px;
+        border-radius: 4px;
     }
     
     [data-testid="stSidebar"] {
@@ -111,9 +117,40 @@ st.markdown("""
     
     .metric-card {
         background: var(--card);
-        padding: 16px;
-        border-radius: 8px;
+        padding: 12px;
+        border-radius: 4px;
         border: 1px solid var(--border);
+    }
+    
+    .delete-btn {
+        background: transparent;
+        border: 1px solid #666;
+        color: #999;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .delete-btn:hover {
+        border-color: #ff4444;
+        color: #ff4444;
+    }
+    
+    .chat-message-container {
+        position: relative;
+        margin: 6px 0;
+    }
+    
+    .message-actions {
+        display: inline-block;
+        margin-left: 8px;
+        opacity: 0.6;
+    }
+    
+    .message-actions:hover {
+        opacity: 1;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -289,13 +326,13 @@ Now respond to the user's query."""
 # -------------------------
 # UI: Header
 # -------------------------
-st.markdown('<div class="main-title">✨ Nebula DataSense</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">DataSense</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">AI-powered database query agent with analytics & dashboards</div>', unsafe_allow_html=True)
 
 if GEMINI_API_KEY:
-    st.sidebar.success("✓ API key loaded")
+    st.sidebar.success("API key loaded")
 else:
-    st.sidebar.error("⚠ GEMINI_API_KEY not found in .env file")
+    st.sidebar.error("GEMINI_API_KEY not found in .env file")
 
 st.sidebar.markdown(f"**Model:** {st.session_state.current_model}")
 st.sidebar.markdown("---")
@@ -303,7 +340,7 @@ st.sidebar.markdown("---")
 # -------------------------
 # UI: File Upload
 # -------------------------
-st.sidebar.header("📁 Data Source")
+st.sidebar.header("Data Source")
 uploaded_file = st.sidebar.file_uploader("Upload CSV", type=["csv"])
 
 if uploaded_file:
@@ -351,12 +388,12 @@ if uploaded_file:
                 schema_lines.append(f"... and {cols - 15} more columns")
             
             st.session_state.schema = "\n".join(schema_lines)
-            st.sidebar.success(f"✓ Loaded {rows:,} rows × {cols} cols")
+            st.sidebar.success(f"Loaded {rows:,} rows × {cols} cols")
             
-            with st.sidebar.expander("📋 Schema"):
+            with st.sidebar.expander("Schema"):
                 st.text(st.session_state.schema)
         else:
-            st.sidebar.error("❌ Failed to read CSV")
+            st.sidebar.error("Failed to read CSV")
             with st.sidebar.expander("Error Details"):
                 for msg in error_messages:
                     st.text(msg)
@@ -366,7 +403,7 @@ if uploaded_file:
 
 # Clear data button
 if st.session_state.df is not None:
-    if st.sidebar.button("🗑️ Clear Dataset"):
+    if st.sidebar.button("Clear Dataset"):
         st.session_state.df = None
         st.session_state.schema = ""
         st.session_state.messages = []
@@ -376,9 +413,9 @@ if st.session_state.df is not None:
 # Main Tabs
 # -------------------------
 if st.session_state.df is None:
-    st.info("👋 Please upload a CSV file from the sidebar to get started!")
+    st.info("Please upload a CSV file from the sidebar to get started")
 else:
-    tab1, tab2, tab3 = st.tabs(["💬 Chat", "📊 Dashboard", "📈 Analytics"])
+    tab1, tab2, tab3 = st.tabs(["Chat", "Dashboard", "Analytics"])
     
     # -------------------------
     # TAB 1: CHAT
@@ -388,35 +425,45 @@ else:
         chat_container = st.container()
         with chat_container:
             if st.session_state.messages:
-                for msg in st.session_state.messages:
+                for idx, msg in enumerate(st.session_state.messages):
                     if msg["role"] == "user":
-                        st.markdown(f'<div class="user-message">{msg["content"]}</div>', unsafe_allow_html=True)
+                        col1, col2 = st.columns([6, 1])
+                        with col1:
+                            st.markdown(f'<div class="user-message">{msg["content"]}</div>', unsafe_allow_html=True)
+                        with col2:
+                            if st.button("Delete", key=f"del_user_{idx}", help="Delete this message"):
+                                # Delete this message and the corresponding bot response
+                                if idx + 1 < len(st.session_state.messages):
+                                    del st.session_state.messages[idx:idx+2]
+                                else:
+                                    del st.session_state.messages[idx]
+                                st.rerun()
                     else:
                         content = msg["content"]
                         if isinstance(content, dict):
                             if content.get("type") == "dataframe":
-                                st.markdown('<div class="bot-message">📊 Query Result:</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="bot-message">Query Result:</div>', unsafe_allow_html=True)
                                 st.dataframe(content["content"], use_container_width=True)
                                 if content.get("explain"):
-                                    st.markdown(f'<div class="bot-message">💡 {content["explain"]}</div>', unsafe_allow_html=True)
+                                    st.markdown(f'<div class="bot-message">{content["explain"]}</div>', unsafe_allow_html=True)
                                 if content.get("code"):
                                     with st.expander("View Code"):
                                         st.code(content["code"])
                             elif content.get("type") == "error":
-                                st.markdown(f'<div class="bot-message">❌ {content["content"]}</div>', unsafe_allow_html=True)
+                                st.markdown(f'<div class="bot-message">Error: {content["content"]}</div>', unsafe_allow_html=True)
                             elif content.get("type") == "text":
                                 st.markdown(f'<div class="bot-message">{content["content"]}</div>', unsafe_allow_html=True)
                         else:
                             st.markdown(f'<div class="bot-message">{content}</div>', unsafe_allow_html=True)
             else:
-                st.info("""👋 **Welcome! Ask me questions about your data:**
+                st.info("""**Ask questions about your data:**
                 
 Examples:
-- "Show me the first 10 rows"
-- "What's the average of column X?"
-- "Filter rows where sales > 1000"
-- "Group by category and count items"
-- "Show unique values in the status column"
+- Show me the first 10 rows
+- What's the average of column X?
+- Filter rows where sales > 1000
+- Group by category and count items
+- Show unique values in the status column
                 """)
 
         # Chat input
@@ -433,7 +480,7 @@ Examples:
             st.session_state.messages.append({"role": "user", "content": user_input})
             
             # Process query
-            with st.spinner("🤔 Thinking..."):
+            with st.spinner("Thinking..."):
                 response = process_query(user_input)
             
             # Add bot response
@@ -444,7 +491,7 @@ Examples:
         
         # Clear chat button
         if st.session_state.messages:
-            if st.button("🗑️ Clear Chat"):
+            if st.button("Clear Chat"):
                 st.session_state.messages = []
                 st.rerun()
     
@@ -454,7 +501,7 @@ Examples:
     with tab2:
         df = st.session_state.df
         
-        st.markdown("### 📊 Data Overview")
+        st.markdown("### Data Overview")
         
         # Quick stats
         col1, col2, col3, col4 = st.columns(4)
@@ -472,14 +519,14 @@ Examples:
         st.markdown("---")
         
         # Data preview
-        st.markdown("### 📋 Data Preview")
+        st.markdown("### Data Preview")
         preview_rows = st.slider("Rows to display", 5, 100, 10)
         st.dataframe(df.head(preview_rows), use_container_width=True)
         
         st.markdown("---")
         
         # Chart builder
-        st.markdown("### 📈 Chart Builder")
+        st.markdown("### Chart Builder")
         
         cols = df.columns.tolist()
         numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
@@ -496,26 +543,26 @@ Examples:
         if st.button("Generate Chart"):
             try:
                 fig, ax = plt.subplots(figsize=(10, 6))
-                fig.patch.set_facecolor('#0f1724')
-                ax.set_facecolor('#0b1020')
-                ax.spines['bottom'].set_color('#94a3b8')
-                ax.spines['top'].set_color('#94a3b8')
-                ax.spines['left'].set_color('#94a3b8')
-                ax.spines['right'].set_color('#94a3b8')
-                ax.tick_params(colors='#e6eef8')
-                ax.xaxis.label.set_color('#e6eef8')
-                ax.yaxis.label.set_color('#e6eef8')
-                ax.title.set_color('#6ee7b7')
+                fig.patch.set_facecolor('#2d2d2d')
+                ax.set_facecolor('#1a1a1a')
+                ax.spines['bottom'].set_color('#666')
+                ax.spines['top'].set_color('#666')
+                ax.spines['left'].set_color('#666')
+                ax.spines['right'].set_color('#666')
+                ax.tick_params(colors='#e0e0e0')
+                ax.xaxis.label.set_color('#e0e0e0')
+                ax.yaxis.label.set_color('#e0e0e0')
+                ax.title.set_color('#ffffff')
                 
                 if chart_type == "Scatter":
-                    ax.scatter(df[x_col], df[y_col], alpha=0.6, color='#6ee7b7')
+                    ax.scatter(df[x_col], df[y_col], alpha=0.6, color='#ff6b35')
                 elif chart_type == "Line":
-                    ax.plot(df[x_col], df[y_col], color='#6ee7b7', linewidth=2)
+                    ax.plot(df[x_col], df[y_col], color='#ff6b35', linewidth=2)
                 elif chart_type == "Bar":
                     df_grouped = df.groupby(x_col)[y_col].mean()
-                    df_grouped.plot(kind='bar', ax=ax, color='#6ee7b7')
+                    df_grouped.plot(kind='bar', ax=ax, color='#ff6b35')
                 elif chart_type == "Histogram":
-                    ax.hist(df[y_col].dropna(), bins=30, color='#6ee7b7', edgecolor='#0b1020')
+                    ax.hist(df[y_col].dropna(), bins=30, color='#ff6b35', edgecolor='#1a1a1a')
                 elif chart_type == "Box Plot":
                     df[[x_col, y_col]].boxplot(ax=ax)
                 
@@ -530,12 +577,12 @@ Examples:
         st.markdown("---")
         
         # Download data
-        st.markdown("### 💾 Export Data")
+        st.markdown("### Export Data")
         csv = df.to_csv(index=False).encode('utf-8')
         st.download_button(
             label="Download as CSV",
             data=csv,
-            file_name="nebula_export.csv",
+            file_name="datasense_export.csv",
             mime="text/csv"
         )
     
@@ -545,7 +592,7 @@ Examples:
     with tab3:
         df = st.session_state.df
         
-        st.markdown("### 📊 Statistical Summary")
+        st.markdown("### Statistical Summary")
         
         # Summary stats
         st.dataframe(df.describe(), use_container_width=True)
@@ -553,7 +600,7 @@ Examples:
         st.markdown("---")
         
         # Missing values analysis
-        st.markdown("### 🔍 Missing Values Analysis")
+        st.markdown("### Missing Values Analysis")
         missing_df = pd.DataFrame({
             'Column': df.columns,
             'Missing Count': df.isnull().sum().values,
@@ -566,35 +613,35 @@ Examples:
             
             # Visualize missing values
             fig, ax = plt.subplots(figsize=(10, 6))
-            fig.patch.set_facecolor('#0f1724')
-            ax.set_facecolor('#0b1020')
-            ax.barh(missing_df['Column'], missing_df['Missing %'], color='#6ee7b7')
-            ax.set_xlabel('Missing %', color='#e6eef8')
-            ax.set_title('Missing Values by Column', color='#6ee7b7')
-            ax.tick_params(colors='#e6eef8')
-            ax.spines['bottom'].set_color('#94a3b8')
-            ax.spines['top'].set_color('#94a3b8')
-            ax.spines['left'].set_color('#94a3b8')
-            ax.spines['right'].set_color('#94a3b8')
+            fig.patch.set_facecolor('#2d2d2d')
+            ax.set_facecolor('#1a1a1a')
+            ax.barh(missing_df['Column'], missing_df['Missing %'], color='#ff6b35')
+            ax.set_xlabel('Missing %', color='#e0e0e0')
+            ax.set_title('Missing Values by Column', color='#ffffff')
+            ax.tick_params(colors='#e0e0e0')
+            ax.spines['bottom'].set_color('#666')
+            ax.spines['top'].set_color('#666')
+            ax.spines['left'].set_color('#666')
+            ax.spines['right'].set_color('#666')
             plt.tight_layout()
             st.pyplot(fig)
         else:
-            st.success("✓ No missing values found!")
+            st.success("No missing values found")
         
         st.markdown("---")
         
         # Correlation analysis
         numeric_df = df.select_dtypes(include=['number'])
         if len(numeric_df.columns) > 1:
-            st.markdown("### 🔗 Correlation Analysis")
+            st.markdown("### Correlation Analysis")
             
             corr_matrix = numeric_df.corr()
             
             fig, ax = plt.subplots(figsize=(10, 8))
-            fig.patch.set_facecolor('#0f1724')
+            fig.patch.set_facecolor('#2d2d2d')
             sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='RdYlGn', 
                        center=0, ax=ax, cbar_kws={'label': 'Correlation'})
-            ax.set_title('Correlation Heatmap', color='#6ee7b7', pad=20)
+            ax.set_title('Correlation Heatmap', color='#ffffff', pad=20)
             plt.tight_layout()
             st.pyplot(fig)
             
@@ -615,7 +662,7 @@ Examples:
         st.markdown("---")
         
         # Distribution analysis
-        st.markdown("### 📉 Distribution Analysis")
+        st.markdown("### Distribution Analysis")
         
         if len(numeric_df.columns) > 0:
             selected_col = st.selectbox("Select column to analyze", numeric_df.columns)
@@ -625,38 +672,38 @@ Examples:
             with col1:
                 # Histogram
                 fig, ax = plt.subplots(figsize=(8, 6))
-                fig.patch.set_facecolor('#0f1724')
-                ax.set_facecolor('#0b1020')
-                ax.hist(numeric_df[selected_col].dropna(), bins=30, color='#6ee7b7', 
-                       edgecolor='#0b1020', alpha=0.7)
-                ax.set_title(f'Distribution of {selected_col}', color='#6ee7b7')
-                ax.set_xlabel(selected_col, color='#e6eef8')
-                ax.set_ylabel('Frequency', color='#e6eef8')
-                ax.tick_params(colors='#e6eef8')
-                ax.spines['bottom'].set_color('#94a3b8')
-                ax.spines['top'].set_color('#94a3b8')
-                ax.spines['left'].set_color('#94a3b8')
-                ax.spines['right'].set_color('#94a3b8')
+                fig.patch.set_facecolor('#2d2d2d')
+                ax.set_facecolor('#1a1a1a')
+                ax.hist(numeric_df[selected_col].dropna(), bins=30, color='#ff6b35', 
+                       edgecolor='#1a1a1a', alpha=0.7)
+                ax.set_title(f'Distribution of {selected_col}', color='#ffffff')
+                ax.set_xlabel(selected_col, color='#e0e0e0')
+                ax.set_ylabel('Frequency', color='#e0e0e0')
+                ax.tick_params(colors='#e0e0e0')
+                ax.spines['bottom'].set_color('#666')
+                ax.spines['top'].set_color('#666')
+                ax.spines['left'].set_color('#666')
+                ax.spines['right'].set_color('#666')
                 plt.tight_layout()
                 st.pyplot(fig)
             
             with col2:
                 # Box plot
                 fig, ax = plt.subplots(figsize=(8, 6))
-                fig.patch.set_facecolor('#0f1724')
-                ax.set_facecolor('#0b1020')
+                fig.patch.set_facecolor('#2d2d2d')
+                ax.set_facecolor('#1a1a1a')
                 ax.boxplot(numeric_df[selected_col].dropna(), vert=True, patch_artist=True,
-                          boxprops=dict(facecolor='#6ee7b7', alpha=0.7),
-                          medianprops=dict(color='#0b1020', linewidth=2),
-                          whiskerprops=dict(color='#94a3b8'),
-                          capprops=dict(color='#94a3b8'))
-                ax.set_title(f'Box Plot of {selected_col}', color='#6ee7b7')
-                ax.set_ylabel(selected_col, color='#e6eef8')
-                ax.tick_params(colors='#e6eef8')
-                ax.spines['bottom'].set_color('#94a3b8')
-                ax.spines['top'].set_color('#94a3b8')
-                ax.spines['left'].set_color('#94a3b8')
-                ax.spines['right'].set_color('#94a3b8')
+                          boxprops=dict(facecolor='#ff6b35', alpha=0.7),
+                          medianprops=dict(color='#1a1a1a', linewidth=2),
+                          whiskerprops=dict(color='#a0a0a0'),
+                          capprops=dict(color='#a0a0a0'))
+                ax.set_title(f'Box Plot of {selected_col}', color='#ffffff')
+                ax.set_ylabel(selected_col, color='#e0e0e0')
+                ax.tick_params(colors='#e0e0e0')
+                ax.spines['bottom'].set_color('#666')
+                ax.spines['top'].set_color('#666')
+                ax.spines['left'].set_color('#666')
+                ax.spines['right'].set_color('#666')
                 plt.tight_layout()
                 st.pyplot(fig)
             
@@ -680,7 +727,7 @@ Examples:
         st.markdown("---")
         
         # AI Insights
-        st.markdown("### 🤖 AI-Generated Insights")
+        st.markdown("### AI-Generated Insights")
         if st.button("Generate Insights"):
             if not GEMINI_API_KEY:
                 st.error("API key not configured")
