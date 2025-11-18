@@ -1,171 +1,126 @@
-##############################################
-# NEBULA DATASENSE — CHAT + DASHBOARD + ANALYTICS
-##############################################
-
 import os
 import ast
 import sqlite3
 import pandas as pd
 import numpy as np
 import streamlit as st
-import html
 import requests
-import seaborn as sns
 import matplotlib.pyplot as plt
+import seaborn as sns
+from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
 
-# -----------------------------------------------------------
-# PAGE CONFIG
-# -----------------------------------------------------------
+# -------------------------
+# Configuration
+# -------------------------
 st.set_page_config(page_title="Nebula DataSense", layout="wide")
 
-
-
-# -----------------------------------------------------------
-# AVAILABLE GEMINI MODELS (YOUR ACCOUNT)
-# -----------------------------------------------------------
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 MODEL_PRIORITY = [
     "gemini-2.5-flash",
     "gemini-2.0-flash",
     "gemini-2.0-flash-001",
-    "gemini-2.0-flash-lite",
-    "gemini-2.0-flash-lite-001",
-    "gemini-2.5-flash-lite"
 ]
 
-
-
-# -----------------------------------------------------------
-# SCI-FI UI
-# -----------------------------------------------------------
+# -------------------------
+# Minimal Dark Theme
+# -------------------------
 st.markdown("""
-<style>
-html, body, [data-testid="stAppViewContainer"] {
-    background: radial-gradient(circle at 50% 50%, rgba(0,200,255,0.15), rgba(0,10,20,1));
-    color: #e7faff;
-    font-family: 'Inter', sans-serif;
-}
-.title {
-    font-size: 40px;
-    font-weight: 800;
-    color: #00eaff;
-    text-align: center;
-    margin-top: 10px;
-}
-.subtitle {
-    font-size: 20px;
-    color: #e0f7ff;
-    text-align: center;
-    margin-bottom: 30px;
-}
-.hidden-upload > div { display: none !important; }
-.user-bubble {
-    background: #ffffff;
-    color: black;
-    padding: 12px 16px;
-    border-radius: 12px;
-    margin: 12px 0;
-}
-.bot-bubble {
-    background: rgba(255,255,255,0.10);
-    color: white;
-    padding: 14px 18px;
-    border-radius: 12px;
-    border-left: 4px solid #00eaff;
-    margin: 12px 0;
-}
-.stTextInput > div > div > input {
-    background: white !important;
-    color: black !important;
-    font-size: 16px;
-    padding: 12px;
-    border-radius: 12px;
-    border: 1px solid #00eaff;
-}
-.plus-btn {
-    background-color: #00eaff;
-    color: black;
-    font-size: 28px;
-    font-weight: bold;
-    width: 55px;
-    height: 50px;
-    border-radius: 12px;
-    border: none;
-    cursor: pointer;
-}
-.plus-btn:hover {
-    background-color: #00bcd4;
-}
-</style>
+    <style>
+    :root {
+        --bg: #0b1020;
+        --card: #0f1724;
+        --muted: #94a3b8;
+        --accent: #6ee7b7;
+        --border: rgba(255,255,255,0.06);
+    }
+    
+    html, body, [data-testid="stAppViewContainer"] {
+        background: var(--bg);
+        color: #e6eef8;
+    }
+    
+    .stApp {
+        font-family: 'Inter', -apple-system, sans-serif;
+    }
+    
+    .main-title {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 8px;
+    }
+    
+    .subtitle {
+        color: var(--muted);
+        font-size: 14px;
+        margin-bottom: 24px;
+    }
+    
+    .user-message {
+        background: linear-gradient(90deg, #0ea5a4, #34d399);
+        color: #011;
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin: 8px 0;
+        text-align: right;
+        font-weight: 500;
+    }
+    
+    .bot-message {
+        background: var(--card);
+        color: #e6eef8;
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin: 8px 0;
+        border: 1px solid var(--border);
+    }
+    
+    .stButton>button {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--accent);
+        padding: 8px 16px;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    
+    .stButton>button:hover {
+        border-color: var(--accent);
+        background: rgba(110, 231, 183, 0.1);
+    }
+    
+    .stTextInput>div>div>input {
+        background: var(--card);
+        border: 1px solid var(--border);
+        color: #e6eef8;
+        border-radius: 8px;
+    }
+    
+    .stDataFrame {
+        background: var(--card);
+        border-radius: 8px;
+    }
+    
+    [data-testid="stSidebar"] {
+        background: var(--card);
+        border-right: 1px solid var(--border);
+    }
+    
+    .metric-card {
+        background: var(--card);
+        padding: 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-
-# -----------------------------------------------------------
-# TITLE + WELCOME
-# -----------------------------------------------------------
-st.markdown('<div class="title">✨ Nebula DataSense</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Welcome! How can I assist you with your dataset today?</div>', unsafe_allow_html=True)
-
-
-
-# -----------------------------------------------------------
-# GEMINI API HANDLER (AUTO MODEL SWITCHING)
-# -----------------------------------------------------------
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-
-def call_gemini(model_name, system_prompt, user_prompt):
-    url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
-
-    body = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": system_prompt + "\nUSER:\n" + user_prompt}
-                ]
-            }
-        ],
-        "generationConfig": {"temperature": 0.15}
-    }
-
-    try:
-        r = requests.post(url, json=body)
-        return r.status_code, r.json()
-    except Exception as e:
-        return -1, {"error": str(e)}
-
-
-
-def call_gemini_auto(system_prompt, user_prompt):
-    for model in MODEL_PRIORITY:
-        status, response = call_gemini(model, system_prompt, user_prompt)
-
-        if status == 200 and "candidates" in response:
-            return model, response["candidates"][0]["content"]["parts"][0]["text"]
-
-        if status in [500, 503]:
-            continue
-
-    return None, "<chat>All models busy. Try again.</chat>"
-
-
-
-# -----------------------------------------------------------
-# SAFE PANDAS EXECUTION
-# -----------------------------------------------------------
-ALLOWED = {"df", "pd", "np"}
-
-def safe_eval(expr, df):
-    tree = ast.parse(expr, mode="eval")
-    for n in ast.walk(tree):
-        if isinstance(n, ast.Name) and n.id not in ALLOWED:
-            raise ValueError("Illegal variable")
-    return eval(compile(tree, "<safe>", "eval"), {"__builtins__": {}}, {"df": df, "pd": pd, "np": np})
-
-
-
-# -----------------------------------------------------------
-# SESSION STATE
-# -----------------------------------------------------------
+# -------------------------
+# Session State
+# -------------------------
 if "df" not in st.session_state:
     st.session_state.df = None
 if "schema" not in st.session_state:
@@ -174,220 +129,579 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "current_model" not in st.session_state:
     st.session_state.current_model = MODEL_PRIORITY[0]
-if "pending_send" not in st.session_state:
-    st.session_state.pending_send = False
-if "text_buffer" not in st.session_state:
-    st.session_state.text_buffer = ""
-if "input_key" not in st.session_state:
-    st.session_state.input_key = 0
-if "show_upload" not in st.session_state:
-    st.session_state.show_upload = False
+
+# -------------------------
+# Gemini API Functions
+# -------------------------
+def call_gemini(model_name, system_prompt, user_prompt):
+    """Call Gemini API with error handling"""
+    if not GEMINI_API_KEY:
+        return -1, {"error": "API key not configured"}
+    
+    url = f"https://generativelanguage.googleapis.com/v1/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
+    body = {
+        "contents": [{"parts": [{"text": system_prompt + "\n\nUSER:\n" + user_prompt}]}],
+        "generationConfig": {"temperature": 0.1, "maxOutputTokens": 2048},
+    }
+    
+    try:
+        response = requests.post(url, json=body, timeout=30)
+        return response.status_code, response.json()
+    except requests.exceptions.Timeout:
+        return -1, {"error": "Request timeout"}
+    except Exception as e:
+        return -1, {"error": str(e)}
 
 
-
-# ===========================================================
-# UI TABS
-# ===========================================================
-tab_chat, tab_dashboard, tab_analytics = st.tabs([
-    "💬 Chat",
-    "📊 Dashboard",
-    "📈 Analytics"
-])
-
-
-
-# ===========================================================
-# TAB 1 — CHAT MODE
-# ===========================================================
-with tab_chat:
-
-    # Chat history
-    for m in st.session_state.messages:
-        if m["role"] == "user":
-            st.markdown(f'<div class="user-bubble">👤 {html.escape(m["content"])}</div>', unsafe_allow_html=True)
-        else:
-            content = m["content"]
-            if isinstance(content, dict) and content.get("type") == "table":
-                st.markdown('<div class="bot-bubble">🤖 Result:</div>', unsafe_allow_html=True)
-                st.dataframe(content["data"])
-            else:
-                st.markdown(f'<div class="bot-bubble">🤖 {html.escape(str(content))}</div>', unsafe_allow_html=True)
-
-    # Chat input row
-    col1, col2 = st.columns([1, 9])
-
-    with col1:
-        attach = st.button("+", key="att", help="Upload CSV")
-
-    with col2:
-        def on_enter():
-            st.session_state.text_buffer = st.session_state[f"input_{st.session_state.input_key}"]
-            st.session_state.pending_send = True
-
-        st.text_input(
-            "",
-            key=f"input_{st.session_state.input_key}",
-            placeholder="Ask anything…",
-            on_change=on_enter
-        )
-
-    if attach:
-        st.session_state.show_upload = True
-
-    # Hidden uploader
-    if st.session_state.show_upload:
-        st.markdown("<div class='hidden-upload'>", unsafe_allow_html=True)
-        csv_file = st.file_uploader("Upload CSV", type=["csv"], key="csv_u")
-        st.markdown("</div>", unsafe_allow_html=True)
-    else:
-        csv_file = None
-
-    # Process CSV upload
-    if csv_file:
-        df = pd.read_csv(csv_file)
-        st.session_state.df = df
-        rows, cols = df.shape
-        schema = f"{rows} rows × {cols} columns\n" + "\n".join([f"- {c} ({df[c].dtype})" for c in df.columns])
-        st.session_state.schema = schema
-
-        st.markdown("### 📄 Dataset Uploaded")
-        st.code(schema)
-        st.dataframe(df.head())
-
-    if st.session_state.df is None:
-        st.stop()
-
-    # Chat processing
-    if st.session_state.pending_send:
-        st.session_state.pending_send = False
-
-        msg = st.session_state.text_buffer.strip()
-        st.session_state.text_buffer = ""
-        st.session_state.input_key += 1
-
-        if msg:
-            st.session_state.messages.append({"role": "user", "content": msg})
-
-            system_prompt = f"""
-You are a dataset assistant. Respond using EXACTLY one of:
-
-1) <chat>...</chat>
-2) <pandas>...</pandas>
-3) <sql>...</sql>
-
-Dataset Schema:
-{st.session_state.schema}
-"""
-
-            model_used, raw = call_gemini_auto(system_prompt, msg)
-            st.session_state.current_model = model_used or "N/A"
-
-            df = st.session_state.df
-
+def call_gemini_auto(system_prompt, user_prompt):
+    """Auto-fallback through model list"""
+    for model in MODEL_PRIORITY:
+        status, response = call_gemini(model, system_prompt, user_prompt)
+        
+        if status == 200 and isinstance(response, dict):
             try:
-                if "<chat>" in raw:
-                    ans = raw.split("<chat>")[1].split("</chat>")[0]
-                    st.session_state.messages.append({"role": "assistant", "content": ans})
+                text = response["candidates"][0]["content"]["parts"][0]["text"]
+                return model, text
+            except (KeyError, IndexError):
+                continue
+        
+        if status in [500, 503]:  # Server errors, try next model
+            continue
+    
+    return None, "<chat>All models unavailable. Please check your API key and try again.</chat>"
 
-                elif "<pandas>" in raw:
-                    expr = raw.split("<pandas>")[1].split("</pandas>")[0]
-                    res = safe_eval(expr, df)
+# -------------------------
+# Safe Expression Evaluation
+# -------------------------
+def safe_eval(expr, df):
+    """Safely evaluate pandas expressions"""
+    ALLOWED_NAMES = {"df", "pd", "np"}
+    
+    try:
+        tree = ast.parse(expr, mode="eval")
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and node.id not in ALLOWED_NAMES:
+                raise ValueError(f"Unauthorized name: {node.id}")
+        
+        return eval(
+            compile(tree, "<safe>", "eval"),
+            {"__builtins__": {}},
+            {"df": df, "pd": pd, "np": np}
+        )
+    except Exception as e:
+        raise ValueError(f"Evaluation error: {str(e)}")
 
-                    if isinstance(res, pd.DataFrame):
-                        st.session_state.messages.append({"role": "assistant", "content": {"type": "table", "data": res}})
-                    elif isinstance(res, pd.Series):
-                        st.session_state.messages.append({"role": "assistant", "content": {"type": "table", "data": res.to_frame()}})
-                    else:
-                        st.session_state.messages.append({"role": "assistant", "content": str(res)})
+# -------------------------
+# Query Processing
+# -------------------------
+def process_query(user_input):
+    """Process user query and return response"""
+    if st.session_state.df is None:
+        return {"type": "text", "content": "Please upload a CSV file first."}
+    
+    # Get sample data for context
+    sample_data = st.session_state.df.head(3).to_string()
+    
+    system_prompt = f"""You are a data analysis assistant. Analyze the user's query and respond using EXACTLY one of these XML formats:
 
-                elif "<sql>" in raw:
-                    query = raw.split("<sql>")[1].split("</sql>")[0]
-                    conn = sqlite3.connect(":memory:")
-                    df.to_sql("data", conn, index=False)
-                    res = pd.read_sql_query(query, conn)
-                    st.session_state.messages.append({"role": "assistant", "content": {"type": "table", "data": res}})
+1) <chat>...</chat> - For general questions, explanations, or when you need clarification
+2) <pandas>...</pandas> - For pandas operations that return DataFrames or values
+3) <sql>...</sql> - For SQL queries (table name is 'data')
 
-                else:
-                    st.session_state.messages.append({"role": "assistant", "content": raw})
+IMPORTANT RULES:
+- Always wrap your code in the appropriate XML tags
+- For pandas: write valid Python pandas code that works with variable 'df'
+- For SQL: write valid SQL for a table named 'data'
+- Add <explain>...</explain> after pandas/SQL to explain what the code does
+- Keep explanations concise and clear
 
-            except Exception as e:
-                st.session_state.messages.append({"role": "assistant", "content": f"Error: {e}"})
+Dataset Information:
+{st.session_state.schema}
 
+Sample Data:
+{sample_data}
+
+EXAMPLES:
+
+User: "show me the first 10 rows"
+Response: <pandas>df.head(10)</pandas><explain>Displays the first 10 rows of the dataset</explain>
+
+User: "what's the average price?"
+Response: <pandas>df['price'].mean()</pandas><explain>Calculates the mean of the price column</explain>
+
+User: "filter rows where sales > 1000"
+Response: <pandas>df[df['sales'] > 1000]</pandas><explain>Filters the dataset to show only rows where sales exceed 1000</explain>
+
+User: "group by category and sum revenue"
+Response: <pandas>df.groupby('category')['revenue'].sum()</pandas><explain>Groups data by category and sums the revenue for each group</explain>
+
+User: "what columns are available?"
+Response: <chat>The dataset has the following columns: {', '.join(st.session_state.df.columns.tolist()[:5])}...</chat>
+
+Now respond to the user's query."""
+
+    model_used, raw_response = call_gemini_auto(system_prompt, user_input)
+    st.session_state.current_model = model_used or st.session_state.current_model
+    
+    try:
+        # Chat response
+        if "<chat>" in raw_response and "</chat>" in raw_response:
+            content = raw_response.split("<chat>")[1].split("</chat>")[0].strip()
+            return {"type": "text", "content": content}
+        
+        # Pandas expression
+        elif "<pandas>" in raw_response and "</pandas>" in raw_response:
+            expr = raw_response.split("<pandas>")[1].split("</pandas>")[0].strip()
+            explain = ""
+            if "<explain>" in raw_response and "</explain>" in raw_response:
+                explain = raw_response.split("<explain>")[1].split("</explain>")[0].strip()
+            
+            result = safe_eval(expr, st.session_state.df)
+            
+            if isinstance(result, pd.DataFrame):
+                return {"type": "dataframe", "content": result, "explain": explain, "code": expr}
+            elif isinstance(result, pd.Series):
+                return {"type": "dataframe", "content": result.to_frame(), "explain": explain, "code": expr}
+            else:
+                return {"type": "text", "content": f"Result: {str(result)}\n\n{explain}" if explain else f"Result: {str(result)}"}
+        
+        # SQL query
+        elif "<sql>" in raw_response and "</sql>" in raw_response:
+            query = raw_response.split("<sql>")[1].split("</sql>")[0].strip()
+            explain = ""
+            if "<explain>" in raw_response and "</explain>" in raw_response:
+                explain = raw_response.split("<explain>")[1].split("</explain>")[0].strip()
+            
+            conn = sqlite3.connect(":memory:")
+            st.session_state.df.to_sql("data", conn, index=False, if_exists="replace")
+            result = pd.read_sql_query(query, conn)
+            conn.close()
+            
+            return {"type": "dataframe", "content": result, "explain": explain, "code": query}
+        
+        else:
+            # Fallback - treat as chat
+            return {"type": "text", "content": raw_response}
+    
+    except Exception as e:
+        return {"type": "error", "content": f"Error: {str(e)}"}
+
+# -------------------------
+# UI: Header
+# -------------------------
+st.markdown('<div class="main-title">✨ Nebula DataSense</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">AI-powered database query agent with analytics & dashboards</div>', unsafe_allow_html=True)
+
+if GEMINI_API_KEY:
+    st.sidebar.success("✓ API key loaded")
+else:
+    st.sidebar.error("⚠ GEMINI_API_KEY not found in .env file")
+
+st.sidebar.markdown(f"**Model:** {st.session_state.current_model}")
+st.sidebar.markdown("---")
+
+# -------------------------
+# UI: File Upload
+# -------------------------
+st.sidebar.header("📁 Data Source")
+uploaded_file = st.sidebar.file_uploader("Upload CSV", type=["csv"])
+
+if uploaded_file:
+    try:
+        # Try multiple CSV reading strategies
+        df = None
+        error_messages = []
+        
+        # Strategy 1: Standard read
+        try:
+            df = pd.read_csv(uploaded_file)
+        except Exception as e1:
+            error_messages.append(f"Standard: {str(e1)[:50]}")
+            
+            # Strategy 2: With error handling
+            try:
+                uploaded_file.seek(0)
+                df = pd.read_csv(uploaded_file, on_bad_lines='skip', encoding='utf-8')
+            except Exception as e2:
+                error_messages.append(f"UTF-8: {str(e2)[:50]}")
+                
+                # Strategy 3: Different encoding
+                try:
+                    uploaded_file.seek(0)
+                    df = pd.read_csv(uploaded_file, on_bad_lines='skip', encoding='latin-1')
+                except Exception as e3:
+                    error_messages.append(f"Latin-1: {str(e3)[:50]}")
+                    
+                    # Strategy 4: Python engine
+                    try:
+                        uploaded_file.seek(0)
+                        df = pd.read_csv(uploaded_file, engine='python', on_bad_lines='skip', 
+                                       encoding='utf-8', sep=None)
+                    except Exception as e4:
+                        error_messages.append(f"Python engine: {str(e4)[:50]}")
+        
+        if df is not None and not df.empty:
+            st.session_state.df = df
+            
+            rows, cols = df.shape
+            schema_lines = [f"{rows:,} rows × {cols} columns"]
+            for col in df.columns[:15]:
+                schema_lines.append(f"- {col} ({df[col].dtype})")
+            if cols > 15:
+                schema_lines.append(f"... and {cols - 15} more columns")
+            
+            st.session_state.schema = "\n".join(schema_lines)
+            st.sidebar.success(f"✓ Loaded {rows:,} rows × {cols} cols")
+            
+            with st.sidebar.expander("📋 Schema"):
+                st.text(st.session_state.schema)
+        else:
+            st.sidebar.error("❌ Failed to read CSV")
+            with st.sidebar.expander("Error Details"):
+                for msg in error_messages:
+                    st.text(msg)
+    
+    except Exception as e:
+        st.sidebar.error(f"Error: {str(e)}")
+
+# Clear data button
+if st.session_state.df is not None:
+    if st.sidebar.button("🗑️ Clear Dataset"):
+        st.session_state.df = None
+        st.session_state.schema = ""
+        st.session_state.messages = []
         st.rerun()
 
+# -------------------------
+# Main Tabs
+# -------------------------
+if st.session_state.df is None:
+    st.info("👋 Please upload a CSV file from the sidebar to get started!")
+else:
+    tab1, tab2, tab3 = st.tabs(["💬 Chat", "📊 Dashboard", "📈 Analytics"])
+    
+    # -------------------------
+    # TAB 1: CHAT
+    # -------------------------
+    with tab1:
+        # Display chat history
+        chat_container = st.container()
+        with chat_container:
+            if st.session_state.messages:
+                for msg in st.session_state.messages:
+                    if msg["role"] == "user":
+                        st.markdown(f'<div class="user-message">{msg["content"]}</div>', unsafe_allow_html=True)
+                    else:
+                        content = msg["content"]
+                        if isinstance(content, dict):
+                            if content.get("type") == "dataframe":
+                                st.markdown('<div class="bot-message">📊 Query Result:</div>', unsafe_allow_html=True)
+                                st.dataframe(content["content"], use_container_width=True)
+                                if content.get("explain"):
+                                    st.markdown(f'<div class="bot-message">💡 {content["explain"]}</div>', unsafe_allow_html=True)
+                                if content.get("code"):
+                                    with st.expander("View Code"):
+                                        st.code(content["code"])
+                            elif content.get("type") == "error":
+                                st.markdown(f'<div class="bot-message">❌ {content["content"]}</div>', unsafe_allow_html=True)
+                            elif content.get("type") == "text":
+                                st.markdown(f'<div class="bot-message">{content["content"]}</div>', unsafe_allow_html=True)
+                        else:
+                            st.markdown(f'<div class="bot-message">{content}</div>', unsafe_allow_html=True)
+            else:
+                st.info("""👋 **Welcome! Ask me questions about your data:**
+                
+Examples:
+- "Show me the first 10 rows"
+- "What's the average of column X?"
+- "Filter rows where sales > 1000"
+- "Group by category and count items"
+- "Show unique values in the status column"
+                """)
 
+        # Chat input
+        st.markdown("---")
+        col1, col2 = st.columns([6, 1])
+        with col1:
+            user_input = st.text_input("Ask a question...", key="user_input", label_visibility="collapsed", 
+                                      placeholder="e.g., Show top 5 rows sorted by revenue")
+        with col2:
+            send_button = st.button("Send", use_container_width=True, type="primary")
 
-# ===========================================================
-# TAB 2 — DASHBOARD MODE
-# ===========================================================
-with tab_dashboard:
+        if send_button and user_input:
+            # Add user message
+            st.session_state.messages.append({"role": "user", "content": user_input})
+            
+            # Process query
+            with st.spinner("🤔 Thinking..."):
+                response = process_query(user_input)
+            
+            # Add bot response
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            
+            # Rerun to display new messages
+            st.rerun()
+        
+        # Clear chat button
+        if st.session_state.messages:
+            if st.button("🗑️ Clear Chat"):
+                st.session_state.messages = []
+                st.rerun()
+    
+    # -------------------------
+    # TAB 2: DASHBOARD
+    # -------------------------
+    with tab2:
+        df = st.session_state.df
+        
+        st.markdown("### 📊 Data Overview")
+        
+        # Quick stats
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Rows", f"{len(df):,}")
+        with col2:
+            st.metric("Total Columns", len(df.columns))
+        with col3:
+            missing = df.isnull().sum().sum()
+            st.metric("Missing Values", f"{missing:,}")
+        with col4:
+            duplicates = df.duplicated().sum()
+            st.metric("Duplicate Rows", f"{duplicates:,}")
+        
+        st.markdown("---")
+        
+        # Data preview
+        st.markdown("### 📋 Data Preview")
+        preview_rows = st.slider("Rows to display", 5, 100, 10)
+        st.dataframe(df.head(preview_rows), use_container_width=True)
+        
+        st.markdown("---")
+        
+        # Chart builder
+        st.markdown("### 📈 Chart Builder")
+        
+        cols = df.columns.tolist()
+        numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            chart_type = st.selectbox("Chart Type", ["Scatter", "Line", "Bar", "Histogram", "Box Plot"])
+        with col2:
+            x_col = st.selectbox("X-axis", cols, index=0)
+        with col3:
+            y_col = st.selectbox("Y-axis", cols, index=1 if len(cols) > 1 else 0)
+        
+        if st.button("Generate Chart"):
+            try:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                fig.patch.set_facecolor('#0f1724')
+                ax.set_facecolor('#0b1020')
+                ax.spines['bottom'].set_color('#94a3b8')
+                ax.spines['top'].set_color('#94a3b8')
+                ax.spines['left'].set_color('#94a3b8')
+                ax.spines['right'].set_color('#94a3b8')
+                ax.tick_params(colors='#e6eef8')
+                ax.xaxis.label.set_color('#e6eef8')
+                ax.yaxis.label.set_color('#e6eef8')
+                ax.title.set_color('#6ee7b7')
+                
+                if chart_type == "Scatter":
+                    ax.scatter(df[x_col], df[y_col], alpha=0.6, color='#6ee7b7')
+                elif chart_type == "Line":
+                    ax.plot(df[x_col], df[y_col], color='#6ee7b7', linewidth=2)
+                elif chart_type == "Bar":
+                    df_grouped = df.groupby(x_col)[y_col].mean()
+                    df_grouped.plot(kind='bar', ax=ax, color='#6ee7b7')
+                elif chart_type == "Histogram":
+                    ax.hist(df[y_col].dropna(), bins=30, color='#6ee7b7', edgecolor='#0b1020')
+                elif chart_type == "Box Plot":
+                    df[[x_col, y_col]].boxplot(ax=ax)
+                
+                ax.set_xlabel(x_col)
+                ax.set_ylabel(y_col)
+                ax.set_title(f"{chart_type}: {x_col} vs {y_col}")
+                plt.tight_layout()
+                st.pyplot(fig)
+            except Exception as e:
+                st.error(f"Error creating chart: {str(e)}")
+        
+        st.markdown("---")
+        
+        # Download data
+        st.markdown("### 💾 Export Data")
+        csv = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Download as CSV",
+            data=csv,
+            file_name="nebula_export.csv",
+            mime="text/csv"
+        )
+    
+    # -------------------------
+    # TAB 3: ANALYTICS
+    # -------------------------
+    with tab3:
+        df = st.session_state.df
+        
+        st.markdown("### 📊 Statistical Summary")
+        
+        # Summary stats
+        st.dataframe(df.describe(), use_container_width=True)
+        
+        st.markdown("---")
+        
+        # Missing values analysis
+        st.markdown("### 🔍 Missing Values Analysis")
+        missing_df = pd.DataFrame({
+            'Column': df.columns,
+            'Missing Count': df.isnull().sum().values,
+            'Missing %': (df.isnull().sum().values / len(df) * 100).round(2)
+        })
+        missing_df = missing_df[missing_df['Missing Count'] > 0].sort_values('Missing Count', ascending=False)
+        
+        if len(missing_df) > 0:
+            st.dataframe(missing_df, use_container_width=True)
+            
+            # Visualize missing values
+            fig, ax = plt.subplots(figsize=(10, 6))
+            fig.patch.set_facecolor('#0f1724')
+            ax.set_facecolor('#0b1020')
+            ax.barh(missing_df['Column'], missing_df['Missing %'], color='#6ee7b7')
+            ax.set_xlabel('Missing %', color='#e6eef8')
+            ax.set_title('Missing Values by Column', color='#6ee7b7')
+            ax.tick_params(colors='#e6eef8')
+            ax.spines['bottom'].set_color('#94a3b8')
+            ax.spines['top'].set_color('#94a3b8')
+            ax.spines['left'].set_color('#94a3b8')
+            ax.spines['right'].set_color('#94a3b8')
+            plt.tight_layout()
+            st.pyplot(fig)
+        else:
+            st.success("✓ No missing values found!")
+        
+        st.markdown("---")
+        
+        # Correlation analysis
+        numeric_df = df.select_dtypes(include=['number'])
+        if len(numeric_df.columns) > 1:
+            st.markdown("### 🔗 Correlation Analysis")
+            
+            corr_matrix = numeric_df.corr()
+            
+            fig, ax = plt.subplots(figsize=(10, 8))
+            fig.patch.set_facecolor('#0f1724')
+            sns.heatmap(corr_matrix, annot=True, fmt='.2f', cmap='RdYlGn', 
+                       center=0, ax=ax, cbar_kws={'label': 'Correlation'})
+            ax.set_title('Correlation Heatmap', color='#6ee7b7', pad=20)
+            plt.tight_layout()
+            st.pyplot(fig)
+            
+            # Top correlations
+            st.markdown("#### Strongest Correlations")
+            corr_pairs = []
+            for i in range(len(corr_matrix.columns)):
+                for j in range(i+1, len(corr_matrix.columns)):
+                    corr_pairs.append({
+                        'Variable 1': corr_matrix.columns[i],
+                        'Variable 2': corr_matrix.columns[j],
+                        'Correlation': corr_matrix.iloc[i, j]
+                    })
+            
+            corr_df = pd.DataFrame(corr_pairs).sort_values('Correlation', key=abs, ascending=False).head(10)
+            st.dataframe(corr_df, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # Distribution analysis
+        st.markdown("### 📉 Distribution Analysis")
+        
+        if len(numeric_df.columns) > 0:
+            selected_col = st.selectbox("Select column to analyze", numeric_df.columns)
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Histogram
+                fig, ax = plt.subplots(figsize=(8, 6))
+                fig.patch.set_facecolor('#0f1724')
+                ax.set_facecolor('#0b1020')
+                ax.hist(numeric_df[selected_col].dropna(), bins=30, color='#6ee7b7', 
+                       edgecolor='#0b1020', alpha=0.7)
+                ax.set_title(f'Distribution of {selected_col}', color='#6ee7b7')
+                ax.set_xlabel(selected_col, color='#e6eef8')
+                ax.set_ylabel('Frequency', color='#e6eef8')
+                ax.tick_params(colors='#e6eef8')
+                ax.spines['bottom'].set_color('#94a3b8')
+                ax.spines['top'].set_color('#94a3b8')
+                ax.spines['left'].set_color('#94a3b8')
+                ax.spines['right'].set_color('#94a3b8')
+                plt.tight_layout()
+                st.pyplot(fig)
+            
+            with col2:
+                # Box plot
+                fig, ax = plt.subplots(figsize=(8, 6))
+                fig.patch.set_facecolor('#0f1724')
+                ax.set_facecolor('#0b1020')
+                ax.boxplot(numeric_df[selected_col].dropna(), vert=True, patch_artist=True,
+                          boxprops=dict(facecolor='#6ee7b7', alpha=0.7),
+                          medianprops=dict(color='#0b1020', linewidth=2),
+                          whiskerprops=dict(color='#94a3b8'),
+                          capprops=dict(color='#94a3b8'))
+                ax.set_title(f'Box Plot of {selected_col}', color='#6ee7b7')
+                ax.set_ylabel(selected_col, color='#e6eef8')
+                ax.tick_params(colors='#e6eef8')
+                ax.spines['bottom'].set_color('#94a3b8')
+                ax.spines['top'].set_color('#94a3b8')
+                ax.spines['left'].set_color('#94a3b8')
+                ax.spines['right'].set_color('#94a3b8')
+                plt.tight_layout()
+                st.pyplot(fig)
+            
+            # Statistics
+            st.markdown("#### Statistics")
+            stats_df = pd.DataFrame({
+                'Metric': ['Mean', 'Median', 'Std Dev', 'Min', 'Max', 'Q1', 'Q3'],
+                'Value': [
+                    numeric_df[selected_col].mean(),
+                    numeric_df[selected_col].median(),
+                    numeric_df[selected_col].std(),
+                    numeric_df[selected_col].min(),
+                    numeric_df[selected_col].max(),
+                    numeric_df[selected_col].quantile(0.25),
+                    numeric_df[selected_col].quantile(0.75)
+                ]
+            })
+            stats_df['Value'] = stats_df['Value'].round(2)
+            st.dataframe(stats_df, use_container_width=True)
+        
+        st.markdown("---")
+        
+        # AI Insights
+        st.markdown("### 🤖 AI-Generated Insights")
+        if st.button("Generate Insights"):
+            if not GEMINI_API_KEY:
+                st.error("API key not configured")
+            else:
+                with st.spinner("Analyzing data..."):
+                    insights_prompt = f"""Analyze this dataset and provide 5-7 key insights in bullet points.
 
-    if st.session_state.df is None:
-        st.warning("Upload a dataset first using Chat tab.")
-        st.stop()
+Dataset Info:
+{st.session_state.schema}
 
-    df = st.session_state.df
+Summary Statistics:
+{df.describe().to_string()}
 
-    st.markdown("## 📊 Interactive Dashboard")
+Provide insights about:
+- Data quality and completeness
+- Key patterns or trends
+- Interesting findings
+- Potential issues or outliers
+- Recommendations for further analysis
 
-    # Column Selector
-    st.sidebar.header("Filters")
-
-    numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
-    categorical_cols = df.select_dtypes(include=['object', 'category', 'int64']).columns.tolist()
-
-    # Filters
-    selected_col = st.sidebar.selectbox("Select column to filter", df.columns)
-
-    if selected_col in numeric_cols:
-        min_val = float(df[selected_col].min())
-        max_val = float(df[selected_col].max())
-        user_range = st.sidebar.slider("Range", min_val, max_val, (min_val, max_val))
-        filtered_df = df[(df[selected_col] >= user_range[0]) & (df[selected_col] <= user_range[1])]
-    else:
-        choices = st.sidebar.multiselect("Select values", df[selected_col].unique())
-        filtered_df = df[df[selected_col].isin(choices)] if choices else df
-
-    st.markdown("### 📄 Filtered Table")
-    st.dataframe(filtered_df)
-
-    # Chart builder
-    st.markdown("### 📈 Chart Builder")
-    colA = st.selectbox("X-axis", df.columns)
-    colB = st.selectbox("Y-axis", df.columns)
-
-    fig, ax = plt.subplots()
-    ax.scatter(df[colA], df[colB], alpha=0.7)
-    ax.set_xlabel(colA)
-    ax.set_ylabel(colB)
-    ax.set_title(f"{colA} vs {colB}")
-
-    st.pyplot(fig)
-
-
-
-# ===========================================================
-# TAB 3 — ANALYTICS MODE
-# ===========================================================
-with tab_analytics:
-
-    if st.session_state.df is None:
-        st.warning("Upload a dataset first.")
-        st.stop()
-
-    df = st.session_state.df
-
-    st.markdown("## 📈 Automated Analytics")
-
-    st.markdown("### Summary Statistics")
-    st.dataframe(df.describe())
-
-    st.markdown("### Missing Values")
-    st.dataframe(df.isnull().sum())
-
-    st.markdown("### Correlation Heatmap")
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.heatmap(df.corr(), annot=False, cmap="coolwarm")
-    st.pyplot(fig)
-
+Keep each insight concise (1-2 sentences)."""
+                    
+                    _, response = call_gemini_auto("You are a data analyst providing insights.", insights_prompt)
+                    st.markdown(f'<div class="bot-message">{response}</div>', unsafe_allow_html=True)
