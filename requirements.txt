@@ -1,7 +1,17 @@
-streamlit
-pandas
-numpy
-matplotlib
-seaborn
-requests
-google-generativeai
+streamlit>=1.28.0
+pandas>=2.0.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# SQL Database drivers (optional - install as needed)
+psycopg2-binary>=2.9.9  # PostgreSQL
+mysql-connector-python>=8.2.0  # MySQL
+pyodbc>=5.0.0  # SQL Server
+
+# NoSQL Database drivers (optional - install as needed)
+pymongo>=4.6.0  # MongoDB
+redis>=5.0.0  # Redis
+cassandra-driver>=3.28.0  # Cassandra

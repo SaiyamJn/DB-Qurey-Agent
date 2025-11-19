@@ -1,7 +1,6 @@
 import requests
 from config import GEMINI_API_KEY, MODEL_PRIORITY
 
-
 def call_gemini(model_name, system_prompt, user_prompt):
     """Call Gemini API with error handling"""
     if not GEMINI_API_KEY:
