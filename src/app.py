@@ -196,9 +196,9 @@ if st.session_state.df is not None:
 # Main Content
 # -------------------------
 if st.session_state.df is None:
-    st.info("👆 Please select a data source from the sidebar to get started")
+    st.info("Please select a data source from the sidebar to get started")
 else:
-    tab1, tab2, tab3 = st.tabs(["💬 Chat", "📊 Dashboard", "📈 Analytics"])
+    tab1, tab2, tab3 = st.tabs(["Chat", "Dashboard", "Analytics"])
     
     # -------------------------
     # TAB 1: CHAT
@@ -214,7 +214,7 @@ else:
                         with col1:
                             st.markdown(f'<div class="user-message">{msg["content"]}</div>', unsafe_allow_html=True)
                         with col2:
-                            if st.button("🗑️", key=f"del_user_{idx}", help="Delete this message"):
+                            if st.button("Delete", key=f"del_user_{idx}", help="Delete this message"):
                                 if idx + 1 < len(st.session_state.messages):
                                     del st.session_state.messages[idx:idx+2]
                                 else:
@@ -224,7 +224,7 @@ else:
                         content = msg["content"]
                         if isinstance(content, dict):
                             if content.get("type") == "dataframe":
-                                st.markdown('<div class="bot-message">📊 Query Result:</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="bot-message">Query Result:</div>', unsafe_allow_html=True)
                                 st.dataframe(content["content"], use_container_width=True)
                                 if content.get("explain"):
                                     st.markdown(f'<div class="bot-message">{content["explain"]}</div>', unsafe_allow_html=True)
@@ -232,7 +232,7 @@ else:
                                     with st.expander("View Code"):
                                         st.code(content["code"])
                             elif content.get("type") == "error":
-                                st.markdown(f'<div class="bot-message">❌ Error: {content["content"]}</div>', unsafe_allow_html=True)
+                                st.markdown(f'<div class="bot-message">Error: {content["content"]}</div>', unsafe_allow_html=True)
                             elif content.get("type") == "text":
                                 st.markdown(f'<div class="bot-message">{content["content"]}</div>', unsafe_allow_html=True)
                         else:
@@ -260,7 +260,7 @@ Examples:
         if send_button and user_input:
             st.session_state.messages.append({"role": "user", "content": user_input})
             
-            with st.spinner("🤔 Thinking..."):
+            with st.spinner("Thinking..."):
                 response = query_processor.process_query(
                     user_input,
                     st.session_state.df,
@@ -272,7 +272,7 @@ Examples:
             st.rerun()
         
         if st.session_state.messages:
-            if st.button("🗑️ Clear Chat"):
+            if st.button("Clear Chat"):
                 st.session_state.messages = []
                 st.rerun()
     
@@ -283,7 +283,7 @@ Examples:
         df = st.session_state.df
         visualizer = Visualizer(df)
         
-        st.markdown("### 📋 Data Overview")
+        st.markdown("### Data Overview")
         
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -299,19 +299,19 @@ Examples:
         
         st.markdown("---")
         
-        st.markdown("### 👁️ Data Preview")
+        st.markdown("### Data Preview")
         from config import PREVIEW_ROWS_DEFAULT, PREVIEW_ROWS_MIN, PREVIEW_ROWS_MAX
         preview_rows = st.slider("Rows to display", PREVIEW_ROWS_MIN, PREVIEW_ROWS_MAX, PREVIEW_ROWS_DEFAULT)
         st.dataframe(df.head(preview_rows), use_container_width=True)
         
         st.markdown("---")
         
-        st.markdown("### 📊 Chart Builder")
+        st.markdown("### Chart Builder")
         visualizer.render_chart_builder()
         
         st.markdown("---")
         
-        st.markdown("### 💾 Export Data")
+        st.markdown("### Export Data")
         csv = df.to_csv(index=False).encode('utf-8')
         st.download_button(
             label="Download as CSV",
@@ -327,31 +327,31 @@ Examples:
         df = st.session_state.df
         visualizer = Visualizer(df)
         
-        st.markdown("### 📊 Statistical Summary")
+        st.markdown("### Statistical Summary")
         st.dataframe(df.describe(), use_container_width=True)
         
         st.markdown("---")
         
-        st.markdown("### 🔍 Missing Values Analysis")
+        st.markdown("### Missing Values Analysis")
         visualizer.render_missing_values_analysis()
         
         st.markdown("---")
         
-        st.markdown("### 🔗 Correlation Analysis")
+        st.markdown("### Correlation Analysis")
         visualizer.render_correlation_analysis()
         
         st.markdown("---")
         
-        st.markdown("###Distribution Analysis")
+        st.markdown("### Distribution Analysis")
         visualizer.render_distribution_analysis()
         
         st.markdown("---")
         
-        st.markdown("###AI-Generated Insights")
+        st.markdown("### AI-Generated Insights")
         if st.button("Generate Insights"):
             if not GEMINI_API_KEY:
                 st.error("API key not configured")
             else:
-                with st.spinner("🔍 Analyzing data..."):
+                with st.spinner(" Analyzing data..."):
                     insights = query_processor.generate_insights(df, st.session_state.schema)
                     st.markdown(f'<div class="bot-message">{insights}</div>', unsafe_allow_html=True)

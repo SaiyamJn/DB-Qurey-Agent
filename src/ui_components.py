@@ -243,9 +243,9 @@ def render_table_selector(tables, db_type):
 def render_data_source_info(source_type, table_name=None, connection_info=None):
     """Render current data source information"""
     if source_type == "csv":
-        info_text = f"📄 **Data Source:** CSV File"
+        info_text = f"**Data Source:** CSV File"
     else:
-        info_text = f"🗄️ **Data Source:** {connection_info.get('db_type', 'Database')}"
+        info_text = f"**Data Source:** {connection_info.get('db_type', 'Database')}"
         if table_name:
             info_text += f" - Table: `{table_name}`"
     

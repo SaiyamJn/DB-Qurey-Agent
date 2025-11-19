@@ -81,7 +81,7 @@ class Visualizer:
             plt.tight_layout()
             st.pyplot(fig)
         else:
-            st.success("✓ No missing values found")
+            st.success("No missing values found")
     
     def render_correlation_analysis(self):
         """Render correlation heatmap and top correlations"""
