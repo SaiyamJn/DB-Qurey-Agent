@@ -1,0 +1,101 @@
+# ---------------------
+# Python
+# ---------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.egg
+dist/
+build/
+env/
+venv/
+.venv/
+
+# Virtual environment
+ENV/
+env.bak/
+pip-wheel-metadata/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# PyCharm
+.idea/
+*.iml
+
+# VSCode
+.vscode/
+.history/
+.settings/
+
+# ---------------------
+# Node / Frontend
+# ---------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.next/
+out/
+build/
+.cache/
+dist/
+
+# React build
+*.map
+
+# ---------------------
+# Operating System
+# ---------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------------------
+# Environment & Secrets
+# ---------------------
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# ---------------------
+# Logs
+# ---------------------
+*.log
+logs/
+*.tmp
+
+# ---------------------
+# SQLite / temporary data
+# ---------------------
+*.db
+*.sqlite3
+*.sqlite
+*.db-journal
+
+# ---------------------
+# Streamlit generated
+# ---------------------
+.streamlit/secrets.toml
+.streamlit/state.json
+.streamlit/
+
+# ---------------------
+# Cache
+# ---------------------
+__pycache__/
+.cache/
+coverage/
+
+# ---------------------
+# Others
+# ---------------------
+*.bak
+*.swp
+*.temp
