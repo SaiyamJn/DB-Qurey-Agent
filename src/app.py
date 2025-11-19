@@ -342,12 +342,12 @@ Examples:
         
         st.markdown("---")
         
-        st.markdown("### 📈 Distribution Analysis")
+        st.markdown("###Distribution Analysis")
         visualizer.render_distribution_analysis()
         
         st.markdown("---")
         
-        st.markdown("### 🤖 AI-Generated Insights")
+        st.markdown("###AI-Generated Insights")
         if st.button("Generate Insights"):
             if not GEMINI_API_KEY:
                 st.error("API key not configured")
